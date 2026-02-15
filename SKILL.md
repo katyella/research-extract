@@ -2,10 +2,10 @@
 name: research-extract
 description: >-
   Ingest and analyze content from YouTube, podcasts, blogs, PDFs, and audio files.
-  Extract structured insights using parallel agent teams. Optionally generate
-  slideshow PDFs. Use /research-extract when you want to analyze any content source
-  and extract key insights, quotes, themes, challenges, solutions, frameworks,
-  and external resources.
+  Extract structured insights using parallel agent teams. Generate
+  Show Notes and Cheat Sheet HTML variants. Use /research-extract when you want
+  to analyze any content source and extract key insights, quotes, themes,
+  challenges, solutions, frameworks, and external resources.
 ---
 
 # Research Extract
@@ -35,8 +35,8 @@ When the user invokes this skill, determine their intent:
 - "analyze [slug]" or "extract from [slug]" → Run full extraction with agent team
 - "analyze [url] as [slug]" → Ingest AND run extraction in one step
 
-### Slideshow Commands
-- "slides [slug]" or "slideshow [slug]" → Generate presentation PDF from consolidated results
+### Variant Commands
+- "variants [slug]" → Generate Show Notes + Cheat Sheet HTML from consolidated JSON
 
 ### Query Commands
 - "list sources" → Show all ingested sources
@@ -292,27 +292,46 @@ Save to `.research-extract/exports/[slug]_consolidated.json` with this structure
 }
 ```
 
-### Step 7: Generate slideshow (optional)
+### Step 7: Generate writeup files
 
-If the user requests slides:
+After consolidation, generate two markdown files:
 
-```bash
-python3 .claude/skills/research-extract/scripts/slideshow.py generate --slug [SLUG]
-```
+**File 1: `.research-extract/writeups/[slug]-notes.md`** (Quick Reference)
 
-Output: `.research-extract/slides/[slug]-slides.pdf`
+Structure:
+- Header with source, speakers, date
+- Sections matching main topics from the content
+- Bullet points with key facts
+- Timestamps as clickable links where available: `[(4:57)](url#t=4m57s)`
+- Key quotes in blockquotes with speaker attribution
+- Table of best quotes at bottom
 
-The slideshow includes:
-1. Title slide (source, speakers, date)
-2. Themes overview (card grid)
-3. Key insight slides (top insights with descriptions and quotes)
-4. Quote slides (large typography, top 3 quotes)
-5. Challenges & Solutions (two-column layout)
-6. Frameworks slide (if any extracted)
-7. Action items slide (if any extracted)
-8. Resources slide (grouped by type)
+**File 2: `.research-extract/writeups/[slug]-writeup.md`** (Essay)
 
-### Step 8: Present summary to user
+Structure:
+- Introduction framing the topic's significance
+- Body sections exploring each major theme with developed paragraphs
+- Quotes woven into prose with timestamp citations
+- Conclusion synthesizing implications
+
+**Writing style:** See `STYLE_GUIDE.md` for detailed guidance on paragraph style, quote integration, voice, and punctuation rules.
+
+### Step 8: Generate variant pages (on demand)
+
+When the user runs `variants [slug]`:
+
+1. Read consolidated JSON from `.research-extract/exports/[slug]_consolidated.json`
+2. Read raw transcript from `.research-extract/sources/[slug].txt` (for timestamps)
+3. Read template specs from `VARIANTS.md`
+4. Create output directory: `.research-extract/variants/[slug]/`
+5. Generate two self-contained HTML files:
+   - `show-notes.html` — podcast companion page with timestamped sections, quote callouts, resource grids
+   - `cheat-sheet.html` — print-optimized landscape reference card with color-coded sections
+6. Open both files in the browser: `open .research-extract/variants/[slug]/show-notes.html .research-extract/variants/[slug]/cheat-sheet.html`
+
+Follow all layout, CSS, and generation rules in VARIANTS.md exactly. Every insight, quote, tool, framework, and action item from the consolidated JSON should appear in at least one template.
+
+### Step 9: Present summary to user
 
 Show:
 - Source slug and title
@@ -336,7 +355,9 @@ All data stored in `{project_root}/.research-extract/`:
 - **Merged results**: `exports/[slug]_merged.json`
 - **Consolidated**: `exports/[slug]_consolidated.json`
 - **Progress**: `extraction_progress.json`
-- **Slideshows**: `slides/[slug]-slides.pdf`
+- **Notes writeup**: `writeups/[slug]-notes.md`
+- **Essay writeup**: `writeups/[slug]-writeup.md`
+- **Variant pages**: `variants/[slug]/show-notes.html`, `variants/[slug]/cheat-sheet.html`
 
 ---
 
@@ -370,5 +391,6 @@ print(f'Type: {source[\"source_type\"]}')"
 - Create 1 task per chunk, teammates self-balance by claiming work from TaskList
 - Merge deduplicates overlapping insights automatically
 - Consolidation step is where ranking and synthesis happens
-- Slideshow generation requires the consolidation step to complete first
+- Writeups and variants require the consolidation step to complete first
+- Run `variants [slug]` to generate Show Notes + Cheat Sheet HTML pages
 - Always shut down teammates and call TeamDelete after merging
