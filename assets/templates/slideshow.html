@@ -27,7 +27,7 @@
 <div class="slide slide-themes">
     <h2>{{ slide.title }}</h2>
     <div class="theme-grid">
-        {% for item in slide.items %}
+        {% for item in slide.entries %}
         <div class="theme-card">
             <span class="theme-text">{{ item.theme if item.theme is defined else item }}</span>
             {% if item.frequency is defined %}
@@ -42,7 +42,7 @@
 <div class="slide slide-insights">
     <h2>{{ slide.title }}</h2>
     <div class="insights-list">
-        {% for item in slide.items %}
+        {% for item in slide.entries %}
         <div class="insight-card">
             <h3>{{ item.title if item.title is defined else "Insight" }}</h3>
             {% if item.description is defined %}
@@ -105,7 +105,7 @@
 <div class="slide slide-frameworks">
     <h2>{{ slide.title }}</h2>
     <div class="frameworks-list">
-        {% for f in slide.items %}
+        {% for f in slide.entries %}
         <div class="framework-card">
             <h3>{{ f.name if f.name is defined else "Framework" }}</h3>
             {% if f.description is defined %}
@@ -123,7 +123,7 @@
 <div class="slide slide-actions">
     <h2>{{ slide.title }}</h2>
     <div class="actions-list">
-        {% for a in slide.items %}
+        {% for a in slide.entries %}
         <div class="action-item">
             <span class="action-bullet">&#9654;</span>
             <div>
@@ -141,7 +141,7 @@
 <div class="slide slide-resources">
     <h2>{{ slide.title }}</h2>
     <div class="resources-grid">
-        {% for r in slide.items %}
+        {% for r in slide.entries %}
         <div class="resource-card">
             <span class="resource-type">{{ r.type if r.type is defined else "resource" }}</span>
             <h4>{{ r.name if r.name is defined else r.get("title", "Resource") }}</h4>

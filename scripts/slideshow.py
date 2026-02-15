@@ -53,7 +53,7 @@ def build_slides(data: dict) -> list[dict]:
         slides.append({
             "type": "themes",
             "title": "Key Themes",
-            "items": theme_items[:12],
+            "entries": theme_items[:12],
         })
 
     # 3. Key insights (max 3 slides, 2 per slide)
@@ -63,7 +63,7 @@ def build_slides(data: dict) -> list[dict]:
         slides.append({
             "type": "insights",
             "title": "Key Insights",
-            "items": batch,
+            "entries": batch,
         })
 
     # 4. Top quotes (max 3)
@@ -93,7 +93,7 @@ def build_slides(data: dict) -> list[dict]:
         slides.append({
             "type": "frameworks",
             "title": "Frameworks & Models",
-            "items": frameworks[:6],
+            "entries": frameworks[:6],
         })
 
     # 7. Action items
@@ -102,7 +102,7 @@ def build_slides(data: dict) -> list[dict]:
         slides.append({
             "type": "actions",
             "title": "Action Items",
-            "items": actions[:8],
+            "entries": actions[:8],
         })
 
     # 8. External resources
@@ -113,7 +113,7 @@ def build_slides(data: dict) -> list[dict]:
             slides.append({
                 "type": "resources",
                 "title": "Resources Mentioned",
-                "items": resources[:12],
+                "entries": resources[:12],
             })
     elif isinstance(resources, dict):
         all_resources = []
@@ -127,7 +127,7 @@ def build_slides(data: dict) -> list[dict]:
             slides.append({
                 "type": "resources",
                 "title": "Resources Mentioned",
-                "items": all_resources[:12],
+                "entries": all_resources[:12],
             })
 
     return slides
