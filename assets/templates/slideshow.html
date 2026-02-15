@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="styles/slideshow.css">
+</head>
+<body>
+{% for slide in slides %}
+
+{% if slide.type == "title" %}
+<div class="slide slide-title">
+    <div class="slide-content">
+        <h1>{{ slide.title }}</h1>
+        {% if slide.speakers %}
+        <p class="speakers">{{ slide.speakers | join(", ") }}</p>
+        {% endif %}
+        {% if slide.url %}
+        <p class="url">{{ slide.url }}</p>
+        {% endif %}
+        {% if slide.date %}
+        <p class="date">{{ slide.date }}</p>
+        {% endif %}
+    </div>
+</div>
+
+{% elif slide.type == "themes" %}
+<div class="slide slide-themes">
+    <h2>{{ slide.title }}</h2>
+    <div class="theme-grid">
+        {% for item in slide.items %}
+        <div class="theme-card">
+            <span class="theme-text">{{ item.theme if item.theme is defined else item }}</span>
+            {% if item.frequency is defined %}
+            <span class="theme-freq">{{ item.frequency }}x</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% elif slide.type == "insights" %}
+<div class="slide slide-insights">
+    <h2>{{ slide.title }}</h2>
+    <div class="insights-list">
+        {% for item in slide.items %}
+        <div class="insight-card">
+            <h3>{{ item.title if item.title is defined else "Insight" }}</h3>
+            {% if item.description is defined %}
+            <p class="description">{{ item.description }}</p>
+            {% endif %}
+            {% if item.speaker is defined and item.speaker %}
+            <p class="speaker">{{ item.speaker }}</p>
+            {% endif %}
+            {% if item.quote is defined and item.quote %}
+            <blockquote>{{ item.quote }}</blockquote>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% elif slide.type == "quote" %}
+<div class="slide slide-quote">
+    <div class="quote-content">
+        <blockquote>{{ slide.quote }}</blockquote>
+        {% if slide.speaker %}
+        <p class="attribution">&mdash; {{ slide.speaker }}</p>
+        {% endif %}
+        {% if slide.context %}
+        <p class="context">{{ slide.context }}</p>
+        {% endif %}
+    </div>
+</div>
+
+{% elif slide.type == "challenges_solutions" %}
+<div class="slide slide-challenges-solutions">
+    <h2>{{ slide.title }}</h2>
+    <div class="two-column">
+        <div class="column">
+            <h3>Challenges</h3>
+            {% for c in slide.challenges %}
+            <div class="item">
+                <h4>{{ c.title if c.title is defined else c.get("challenge", "Challenge") }}</h4>
+                {% if c.description is defined %}
+                <p>{{ c.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="column">
+            <h3>Solutions</h3>
+            {% for s in slide.solutions %}
+            <div class="item">
+                <h4>{{ s.title if s.title is defined else s.get("solution", "Solution") }}</h4>
+                {% if s.description is defined %}
+                <p>{{ s.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% elif slide.type == "frameworks" %}
+<div class="slide slide-frameworks">
+    <h2>{{ slide.title }}</h2>
+    <div class="frameworks-list">
+        {% for f in slide.items %}
+        <div class="framework-card">
+            <h3>{{ f.name if f.name is defined else "Framework" }}</h3>
+            {% if f.description is defined %}
+            <p>{{ f.description }}</p>
+            {% endif %}
+            {% if f.speaker is defined and f.speaker %}
+            <p class="speaker">{{ f.speaker }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% elif slide.type == "actions" %}
+<div class="slide slide-actions">
+    <h2>{{ slide.title }}</h2>
+    <div class="actions-list">
+        {% for a in slide.items %}
+        <div class="action-item">
+            <span class="action-bullet">&#9654;</span>
+            <div>
+                <p class="action-text">{{ a.action if a.action is defined else a }}</p>
+                {% if a.context is defined and a.context %}
+                <p class="action-context">{{ a.context }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% elif slide.type == "resources" %}
+<div class="slide slide-resources">
+    <h2>{{ slide.title }}</h2>
+    <div class="resources-grid">
+        {% for r in slide.items %}
+        <div class="resource-card">
+            <span class="resource-type">{{ r.type if r.type is defined else "resource" }}</span>
+            <h4>{{ r.name if r.name is defined else r.get("title", "Resource") }}</h4>
+            {% if r.author is defined and r.author %}
+            <p class="author">{{ r.author }}</p>
+            {% endif %}
+            {% if r.context is defined and r.context %}
+            <p class="context">{{ r.context }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endif %}
+{% endfor %}
+</body>
+</html>

@@ -1,0 +1,339 @@
+@page {
+    size: 11in 8.5in landscape;
+    margin: 0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Inter, "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1a1a2e;
+    background: #ffffff;
+    line-height: 1.5;
+}
+
+/* Base slide */
+.slide {
+    width: 11in;
+    height: 8.5in;
+    padding: 0.8in 1in;
+    page-break-after: always;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.slide:last-child {
+    page-break-after: auto;
+}
+
+/* Headings */
+h2 {
+    font-size: 28pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 0.4in;
+    padding-bottom: 0.15in;
+    border-bottom: 3px solid #0066cc;
+}
+
+h3 {
+    font-size: 18pt;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 0.1in;
+}
+
+h4 {
+    font-size: 14pt;
+    font-weight: 600;
+    color: #333;
+}
+
+p {
+    font-size: 12pt;
+    color: #444;
+}
+
+blockquote {
+    font-size: 13pt;
+    font-style: italic;
+    color: #555;
+    border-left: 3px solid #0066cc;
+    padding-left: 0.15in;
+    margin-top: 0.08in;
+}
+
+/* Title slide */
+.slide-title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: #1a1a2e;
+}
+
+.slide-title .slide-content {
+    max-width: 8in;
+}
+
+.slide-title h1 {
+    font-size: 36pt;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.3in;
+    line-height: 1.2;
+}
+
+.slide-title .speakers {
+    font-size: 18pt;
+    color: #a0a0c0;
+    margin-bottom: 0.15in;
+}
+
+.slide-title .url {
+    font-size: 11pt;
+    color: #6080b0;
+    word-break: break-all;
+}
+
+.slide-title .date {
+    font-size: 11pt;
+    color: #6080b0;
+    margin-top: 0.1in;
+}
+
+/* Themes */
+.theme-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15in;
+}
+
+.theme-card {
+    background: #f0f4f8;
+    border: 1px solid #d0d8e0;
+    border-radius: 8px;
+    padding: 0.12in 0.2in;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1in;
+}
+
+.theme-text {
+    font-size: 13pt;
+    font-weight: 500;
+    color: #1a1a2e;
+}
+
+.theme-freq {
+    font-size: 10pt;
+    color: #0066cc;
+    font-weight: 600;
+}
+
+/* Insights */
+.insights-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3in;
+    flex: 1;
+}
+
+.insight-card {
+    background: #f8f9fb;
+    border-left: 4px solid #0066cc;
+    padding: 0.2in 0.25in;
+    border-radius: 0 8px 8px 0;
+}
+
+.insight-card .description {
+    margin-top: 0.06in;
+    font-size: 12pt;
+}
+
+.insight-card .speaker {
+    font-size: 10pt;
+    color: #0066cc;
+    font-weight: 500;
+    margin-top: 0.06in;
+}
+
+/* Quote slide */
+.slide-quote {
+    justify-content: center;
+    align-items: center;
+    background: #f8f9fb;
+}
+
+.quote-content {
+    max-width: 7.5in;
+    text-align: center;
+}
+
+.slide-quote blockquote {
+    font-size: 22pt;
+    font-style: italic;
+    color: #1a1a2e;
+    border-left: none;
+    padding: 0;
+    line-height: 1.4;
+    quotes: "\201C" "\201D";
+}
+
+.slide-quote blockquote::before {
+    content: open-quote;
+    font-size: 48pt;
+    color: #0066cc;
+    display: block;
+    margin-bottom: 0.1in;
+}
+
+.slide-quote .attribution {
+    font-size: 16pt;
+    color: #0066cc;
+    font-weight: 600;
+    margin-top: 0.3in;
+}
+
+.slide-quote .context {
+    font-size: 11pt;
+    color: #888;
+    margin-top: 0.1in;
+}
+
+/* Two-column layout */
+.two-column {
+    display: flex;
+    gap: 0.4in;
+    flex: 1;
+}
+
+.column {
+    flex: 1;
+}
+
+.column h3 {
+    margin-bottom: 0.15in;
+    padding-bottom: 0.08in;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.column .item {
+    margin-bottom: 0.15in;
+}
+
+.column .item h4 {
+    font-size: 12pt;
+    color: #1a1a2e;
+}
+
+.column .item p {
+    font-size: 10pt;
+    color: #555;
+    margin-top: 0.03in;
+}
+
+/* Frameworks */
+.frameworks-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2in;
+}
+
+.framework-card {
+    flex: 1 1 calc(50% - 0.2in);
+    background: #f0f4f8;
+    border-radius: 8px;
+    padding: 0.2in;
+}
+
+.framework-card h3 {
+    font-size: 14pt;
+    color: #1a1a2e;
+    margin-bottom: 0.06in;
+}
+
+.framework-card p {
+    font-size: 11pt;
+}
+
+.framework-card .speaker {
+    font-size: 10pt;
+    color: #0066cc;
+    margin-top: 0.06in;
+}
+
+/* Actions */
+.actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15in;
+}
+
+.action-item {
+    display: flex;
+    gap: 0.12in;
+    align-items: flex-start;
+}
+
+.action-bullet {
+    color: #0066cc;
+    font-size: 10pt;
+    margin-top: 2pt;
+    flex-shrink: 0;
+}
+
+.action-text {
+    font-size: 13pt;
+    font-weight: 500;
+    color: #1a1a2e;
+}
+
+.action-context {
+    font-size: 10pt;
+    color: #666;
+    margin-top: 0.03in;
+}
+
+/* Resources */
+.resources-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15in;
+}
+
+.resource-card {
+    flex: 1 1 calc(33% - 0.15in);
+    background: #f8f9fb;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 0.15in;
+}
+
+.resource-type {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+    color: #0066cc;
+    font-weight: 600;
+}
+
+.resource-card h4 {
+    font-size: 12pt;
+    margin-top: 0.03in;
+}
+
+.resource-card .author {
+    font-size: 10pt;
+    color: #666;
+}
+
+.resource-card .context {
+    font-size: 9pt;
+    color: #888;
+    margin-top: 0.05in;
+}
