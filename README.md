@@ -25,11 +25,11 @@ Feed it any content source and it will:
 
 ## Install
 
-Copy this directory into `.claude/skills/research-extract/` in your project:
-
 ```bash
-cp -r research-extract/ your-project/.claude/skills/research-extract/
+npx skills add katyella/research-extract
 ```
+
+This installs into `.claude/skills/research-extract/` in your project.
 
 ### First-time setup
 
