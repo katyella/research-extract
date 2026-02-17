@@ -71,7 +71,7 @@ python3 .claude/skills/research-extract/scripts/ingest.py "[URL_OR_PATH]" --slug
 This will:
 - Auto-detect source type (YouTube, blog, PDF, text, audio)
 - Download captions or transcribe with Whisper
-- Store in `.research-extract/research.db`
+- Store metadata and transcript in `.research-extract/sources/`
 
 ### Step 2: Chunk the transcript
 
@@ -348,8 +348,8 @@ Show:
 
 All data stored in `{project_root}/.research-extract/`:
 
-- **Database**: `research.db`
-- **Raw transcripts**: `sources/[video_id].txt`
+- **Source metadata**: `sources/[slug].json`
+- **Transcripts**: `sources/[slug].txt`
 - **Chunks**: `chunks/[slug]_chunk_N.json`
 - **Chunk results**: `exports/[slug]_chunk_N_result.json`
 - **Merged results**: `exports/[slug]_merged.json`
@@ -363,7 +363,7 @@ All data stored in `{project_root}/.research-extract/`:
 
 ## For Queries
 
-List sources:
+List sources (reads `sources/*.json` flat files):
 ```bash
 python3 -c "
 import sys; sys.path.insert(0, '.claude/skills/research-extract/scripts')
@@ -372,7 +372,7 @@ for s in list_sources():
     print(f'{s[\"slug\"]}: [{s[\"source_type\"]}] {s[\"title\"]}')"
 ```
 
-Get source details:
+Get source details (reads `sources/{slug}.json` + `sources/{slug}.txt`):
 ```bash
 python3 -c "
 import sys; sys.path.insert(0, '.claude/skills/research-extract/scripts')

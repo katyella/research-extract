@@ -12,31 +12,22 @@ sys.path.insert(0, str(Path(__file__).parent))
 from extract import update_progress, CHUNKS_DIR, EXPORTS_DIR, get_progress
 
 
-def get_chunk(slug: str = None, source_id: int = None, chunk_id: int = 0) -> dict:
-    """Load a chunk file by slug or source_id."""
-    if slug:
-        chunk_path = CHUNKS_DIR / f"{slug}_chunk_{chunk_id}.json"
-        if chunk_path.exists():
-            with open(chunk_path, 'r') as f:
-                return json.load(f)
-
-    if source_id:
-        chunk_path = CHUNKS_DIR / f"source_{source_id}_chunk_{chunk_id}.json"
-        if chunk_path.exists():
-            with open(chunk_path, 'r') as f:
-                return json.load(f)
-
+def get_chunk(slug: str = None, chunk_id: int = 0) -> dict:
+    """Load a chunk file by slug."""
+    if not slug:
+        return None
+    chunk_path = CHUNKS_DIR / f"{slug}_chunk_{chunk_id}.json"
+    if chunk_path.exists():
+        with open(chunk_path, 'r') as f:
+            return json.load(f)
     return None
 
 
-def save_chunk_result(slug: str = None, source_id: int = None, chunk_id: int = 0, result: dict = None):
+def save_chunk_result(slug: str = None, chunk_id: int = 0, result: dict = None):
     """Save extraction result for a chunk."""
     EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    if slug:
-        result_path = EXPORTS_DIR / f"{slug}_chunk_{chunk_id}_result.json"
-    else:
-        result_path = EXPORTS_DIR / f"source_{source_id}_chunk_{chunk_id}_result.json"
+    result_path = EXPORTS_DIR / f"{slug}_chunk_{chunk_id}_result.json"
 
     with open(result_path, 'w') as f:
         json.dump(result, f, indent=2)
@@ -45,12 +36,11 @@ def save_chunk_result(slug: str = None, source_id: int = None, chunk_id: int = 0
     return result_path
 
 
-def print_chunk_for_analysis(slug: str = None, source_id: int = None, chunk_id: int = 0):
+def print_chunk_for_analysis(slug: str = None, chunk_id: int = 0):
     """Print chunk content for agent to analyze."""
-    chunk = get_chunk(slug=slug, source_id=source_id, chunk_id=chunk_id)
+    chunk = get_chunk(slug=slug, chunk_id=chunk_id)
     if not chunk:
-        identifier = slug or f"source {source_id}"
-        print(f"ERROR: Chunk {chunk_id} not found for {identifier}")
+        print(f"ERROR: Chunk {chunk_id} not found for {slug}")
         return
 
     print(f"=== CHUNK {chunk_id} of {chunk['title']} ===")
@@ -131,31 +121,24 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Process a transcript chunk")
     parser.add_argument("command", choices=["show", "save", "prompt"])
-    parser.add_argument("--slug", type=str, help="Source slug (preferred)")
-    parser.add_argument("--source-id", type=int, help="Source ID")
+    parser.add_argument("--slug", type=str, required=True, help="Source slug")
     parser.add_argument("--chunk-id", type=int, required=True)
     parser.add_argument("--result", type=str, help="JSON result to save (for 'save' command)")
 
     args = parser.parse_args()
 
-    slug = args.slug
-    source_id = args.source_id
-    if not slug and not source_id:
-        print("ERROR: --slug or --source-id required")
-        sys.exit(1)
-
     if args.command == "show":
-        print_chunk_for_analysis(slug=slug, source_id=source_id, chunk_id=args.chunk_id)
+        print_chunk_for_analysis(slug=args.slug, chunk_id=args.chunk_id)
 
     elif args.command == "prompt":
         print(EXTRACTION_PROMPT)
         print("\n--- CHUNK CONTENT ---\n")
-        print_chunk_for_analysis(slug=slug, source_id=source_id, chunk_id=args.chunk_id)
+        print_chunk_for_analysis(slug=args.slug, chunk_id=args.chunk_id)
 
     elif args.command == "save":
         if not args.result:
             print("ERROR: --result required for save command")
             sys.exit(1)
         result = json.loads(args.result)
-        path = save_chunk_result(slug=slug, source_id=source_id, chunk_id=args.chunk_id, result=result)
+        path = save_chunk_result(slug=args.slug, chunk_id=args.chunk_id, result=result)
         print(f"Saved to {path}")

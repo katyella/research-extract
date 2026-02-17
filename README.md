@@ -2,7 +2,15 @@
 
 Extract structured insights from YouTube videos, podcasts, blogs, PDFs, and audio files using Claude Code's parallel agent teams.
 
+<p align="center">
+  <img src="docs/images/hero.png" alt="research-extract" width="600">
+</p>
+
 ## What it does
+
+<p align="center">
+  <img src="docs/images/pipeline-diagram.png" alt="Ingest → Extract → Present" width="500">
+</p>
 
 Feed it any content source and it will:
 
@@ -98,8 +106,7 @@ All data lives in `.research-extract/` at your project root (gitignored by defau
 
 ```
 .research-extract/
-├── research.db                        # SQLite database
-├── sources/                           # Raw transcripts
+├── sources/                           # Metadata JSON + transcript TXT per slug
 ├── chunks/                            # Chunked transcript files
 ├── exports/                           # Extraction results (merged, consolidated)
 ├── extraction_progress_[slug].json    # Per-slug progress tracking
@@ -118,3 +125,9 @@ The extraction pipeline uses Claude Code's agent team feature for parallel proce
 5. A consolidation pass ranks everything by importance and frequency
 
 This means a 60-minute podcast (6+ chunks) gets fully analyzed in roughly the time it takes to process 2 chunks sequentially.
+
+## Example output
+
+| Show Notes | Cheat Sheet |
+|:---:|:---:|
+| <img src="docs/images/show-notes.png" alt="Show Notes" width="350"> | <img src="docs/images/cheat-sheet.png" alt="Cheat Sheet" width="350"> |

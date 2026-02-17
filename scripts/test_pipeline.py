@@ -1,6 +1,6 @@
 """
 Integration test for the research-extract pipeline.
-Exercises DB, ingestion, chunking, progress tracking, merging, and slug safety.
+Exercises flat-file storage, ingestion, chunking, progress tracking, merging, and slug safety.
 """
 
 import sys
@@ -39,12 +39,12 @@ def check(label, condition, detail=""):
         print(msg)
 
 
-def test_db_init():
-    print("\n=== DB initialization ===")
-    conn = db.get_connection()
-    check("connection opens", conn is not None)
-    check("DB file exists", db.DB_PATH.exists())
-    conn.close()
+def test_data_dir_init():
+    print("\n=== Data directory initialization ===")
+    db.DATA_DIR.mkdir(parents=True, exist_ok=True)
+    db.SOURCES_DIR.mkdir(parents=True, exist_ok=True)
+    check("DATA_DIR exists", db.DATA_DIR.exists())
+    check("SOURCES_DIR exists", db.SOURCES_DIR.exists())
 
 
 def test_text_ingestion():
@@ -55,11 +55,16 @@ def test_text_ingestion():
     result = ingest.ingest_text_file(str(sample), slug="test-sample")
     check("ingest succeeds", result["status"] == "success", result.get("message", ""))
     check("slug is correct", result["slug"] == "test-sample")
-    check("source_id returned", isinstance(result["source_id"], int))
 
-    # Verify in DB
+    # Verify flat files exist
+    meta_path = db.SOURCES_DIR / "test-sample.json"
+    txt_path = db.SOURCES_DIR / "test-sample.txt"
+    check("metadata JSON exists", meta_path.exists())
+    check("transcript TXT exists", txt_path.exists())
+
+    # Verify content
     source = db.get_source_by_slug("test-sample")
-    check("source in DB", source is not None)
+    check("source loads via get_source_by_slug", source is not None)
     check("transcript stored", len(source["transcript"]) > 100)
 
 
@@ -83,7 +88,6 @@ def test_slug_sanitization():
 def test_chunking():
     print("\n=== Chunking ===")
     # Need a long enough transcript
-    long_text = "This is sentence number {}. " * 2000
     long_text = " ".join(f"This is sentence number {i}." for i in range(2000))
 
     sample2 = Path(PROJECT_DIR) / "long_sample.txt"
@@ -103,9 +107,8 @@ def test_chunking():
 def test_per_slug_progress(chunks):
     print("\n=== Per-slug progress tracking ===")
     slug = "long-sample"
-    source_id = chunks[0]["source_id"]
 
-    extract.init_progress(slug, source_id, len(chunks))
+    extract.init_progress(slug, len(chunks))
 
     pf = extract._progress_file(slug)
     check("progress file is slug-specific", slug in pf.name)
@@ -146,7 +149,6 @@ def test_save_chunk_results(chunks):
 def test_merge(chunks):
     print("\n=== Merge ===")
     slug = "long-sample"
-    source_id = chunks[0]["source_id"]
 
     # Complete all remaining chunks
     for i in range(2, len(chunks)):
@@ -164,17 +166,18 @@ def test_merge(chunks):
     progress = extract.get_progress(slug=slug)
     check("all chunks completed", progress["status"] == "completed")
 
-    merged = extract.merge_chunk_results(source_id, slug=slug)
+    merged = extract.merge_chunk_results(slug)
     check("merge succeeds", "error" not in merged)
     check("key_insights in merged", "key_insights" in merged)
     check("has metadata", "metadata" in merged)
+    check("slug in merged", merged.get("slug") == slug)
 
 
 def test_concurrent_progress():
     print("\n=== Concurrent progress files ===")
     # Create two progress files for different slugs
-    extract.init_progress("slug-alpha", 100, 3)
-    extract.init_progress("slug-beta", 200, 5)
+    extract.init_progress("slug-alpha", 3)
+    extract.init_progress("slug-beta", 5)
 
     pf_alpha = extract._progress_file("slug-alpha")
     pf_beta = extract._progress_file("slug-beta")
@@ -199,6 +202,7 @@ def test_list_and_get():
     source = db.get_source_by_slug("test-sample")
     check("get by slug works", source is not None)
     check("title present", source["title"] is not None)
+    check("source_type present", source.get("source_type") == "text")
 
 
 def test_blog_html_parsing():
@@ -225,7 +229,7 @@ if __name__ == "__main__":
     print(f"Test project dir: {PROJECT_DIR}")
     print(f"DATA_DIR: {db.DATA_DIR}")
 
-    test_db_init()
+    test_data_dir_init()
     test_text_ingestion()
     test_slug_sanitization()
     chunks = test_chunking()

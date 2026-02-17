@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent))
-from db import get_source, get_source_by_slug, add_extraction, DATA_DIR
+from db import get_source_by_slug, DATA_DIR
 
 CHUNKS_DIR = DATA_DIR / "chunks"
 EXPORTS_DIR = DATA_DIR / "exports"
@@ -20,25 +20,20 @@ def _progress_file(slug: str) -> Path:
     return DATA_DIR / f"extraction_progress_{slug}.json"
 
 
-def chunk_transcript(slug: str = None, source_id: int = None, chunk_size: int = 15000) -> list[dict]:
+def chunk_transcript(slug: str = None, chunk_size: int = 15000) -> list[dict]:
     """
     Split a transcript into chunks for parallel processing.
     Returns list of chunk dicts with metadata.
-    Accepts either slug or source_id.
     """
-    if slug:
-        source = get_source_by_slug(slug)
-    elif source_id:
-        source = get_source(source_id)
-    else:
+    if not slug:
         return []
 
+    source = get_source_by_slug(slug)
     if not source:
         return []
 
     transcript = source['transcript']
     title = source['title']
-    source_slug = source.get('slug') or f"source_{source['id']}"
     chunks = []
 
     text = transcript
@@ -49,8 +44,7 @@ def chunk_transcript(slug: str = None, source_id: int = None, chunk_size: int = 
         if len(text) <= chunk_size:
             chunks.append({
                 "chunk_id": chunk_num,
-                "slug": source_slug,
-                "source_id": source['id'],
+                "slug": slug,
                 "title": title,
                 "start_char": start_char,
                 "text": text.strip(),
@@ -70,8 +64,7 @@ def chunk_transcript(slug: str = None, source_id: int = None, chunk_size: int = 
         chunk_text = text[:best_break]
         chunks.append({
             "chunk_id": chunk_num,
-            "slug": source_slug,
-            "source_id": source['id'],
+            "slug": slug,
             "title": title,
             "start_char": start_char,
             "text": chunk_text.strip(),
@@ -91,7 +84,7 @@ def save_chunks(chunks: list[dict]) -> list[Path]:
 
     paths = []
     for chunk in chunks:
-        slug = chunk.get('slug', f"source_{chunk['source_id']}")
+        slug = chunk['slug']
         chunk_path = CHUNKS_DIR / f"{slug}_chunk_{chunk['chunk_id']}.json"
         with open(chunk_path, 'w') as f:
             json.dump(chunk, f, indent=2)
@@ -100,11 +93,10 @@ def save_chunks(chunks: list[dict]) -> list[Path]:
     return paths
 
 
-def init_progress(slug: str, source_id: int, total_chunks: int) -> dict:
+def init_progress(slug: str, total_chunks: int) -> dict:
     """Initialize progress tracking for an extraction."""
     progress = {
         "slug": slug,
-        "source_id": source_id,
         "total_chunks": total_chunks,
         "completed_chunks": 0,
         "status": "running",
@@ -180,7 +172,7 @@ def print_progress_bar(slug: str = None):
         print(" Done!")
 
 
-def merge_chunk_results(source_id: int, slug: str = None) -> dict:
+def merge_chunk_results(slug: str) -> dict:
     """Merge results from all chunks into a single extraction."""
     progress = get_progress(slug=slug)
     if progress['status'] != "completed":
@@ -207,7 +199,7 @@ def merge_chunk_results(source_id: int, slug: str = None) -> dict:
             all_external_resources.extend(result.get('external_resources', []))
 
     merged = {
-        "source_id": source_id,
+        "slug": slug,
         "key_insights": _dedupe_by_content(all_key_insights),
         "quotes": _dedupe_by_content(all_quotes),
         "themes": _dedupe_by_content(all_themes),
@@ -277,27 +269,25 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Extraction utilities")
     parser.add_argument("command", choices=["chunk", "progress", "merge"])
-    parser.add_argument("--slug", help="Source slug (preferred)")
-    parser.add_argument("--source-id", type=int, help="Source ID")
+    parser.add_argument("--slug", help="Source slug")
     parser.add_argument("--watch", action="store_true", help="Watch progress continuously")
 
     args = parser.parse_args()
 
     if args.command == "chunk":
-        if not args.slug and not args.source_id:
-            print("--slug or --source-id required")
+        if not args.slug:
+            print("--slug required")
             sys.exit(1)
-        chunks = chunk_transcript(slug=args.slug, source_id=args.source_id)
+        chunks = chunk_transcript(slug=args.slug)
         if not chunks:
             print("No source found or empty transcript")
             sys.exit(1)
         paths = save_chunks(chunks)
-        slug = chunks[0].get('slug', f"source_{chunks[0]['source_id']}")
-        source_id = chunks[0]['source_id']
+        slug = chunks[0]['slug']
         print(f"Created {len(chunks)} chunks for '{slug}':")
         for i, chunk in enumerate(chunks):
             print(f"  Chunk {i}: {chunk['char_count']} chars")
-        init_progress(slug, source_id, len(chunks))
+        init_progress(slug, len(chunks))
         print(f"\nChunks saved to {CHUNKS_DIR}")
 
     elif args.command == "progress":
@@ -321,12 +311,11 @@ if __name__ == "__main__":
             print("--slug required for merge")
             sys.exit(1)
         progress = get_progress(slug=args.slug)
-        source_id = progress.get('source_id')
         slug = progress.get('slug')
-        if not source_id:
+        if not slug:
             print("No extraction in progress for this slug")
             sys.exit(1)
-        merged = merge_chunk_results(source_id, slug=slug)
+        merged = merge_chunk_results(slug)
         EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
         output_path = EXPORTS_DIR / f"{slug}_merged.json"
         with open(output_path, 'w') as f:

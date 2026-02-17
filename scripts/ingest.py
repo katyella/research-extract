@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from db import add_source, get_source_by_url, get_source, get_source_by_slug, validate_slug
+from db import add_source, get_source_by_url, get_source_by_slug, validate_slug
 from transcribe import transcribe_youtube, get_youtube_id, transcribe_audio_file
 
 
@@ -88,9 +88,8 @@ def ingest_youtube(url: str, slug: Optional[str] = None) -> dict:
     if existing:
         return {
             "status": "exists",
-            "source_id": existing["id"],
             "slug": existing.get("slug"),
-            "title": existing["title"],
+            "title": existing.get("title"),
             "message": "Already ingested"
         }
 
@@ -110,7 +109,7 @@ def ingest_youtube(url: str, slug: Optional[str] = None) -> dict:
             "message": "Failed to transcribe video"
         }
 
-    source_id, final_slug = add_source(
+    (final_slug,) = add_source(
         source_type="youtube",
         url=url,
         title=metadata.get("title"),
@@ -121,7 +120,6 @@ def ingest_youtube(url: str, slug: Optional[str] = None) -> dict:
 
     return {
         "status": "success",
-        "source_id": source_id,
         "slug": final_slug,
         "title": metadata.get("title"),
         "duration": metadata.get("duration"),
@@ -138,9 +136,8 @@ def ingest_blog(url: str, slug: Optional[str] = None) -> dict:
     if existing:
         return {
             "status": "exists",
-            "source_id": existing["id"],
             "slug": existing.get("slug"),
-            "title": existing["title"],
+            "title": existing.get("title"),
             "message": "Already ingested"
         }
 
@@ -173,7 +170,7 @@ def ingest_blog(url: str, slug: Optional[str] = None) -> dict:
         if len(text) < 100:
             return {"status": "error", "message": "Could not extract meaningful content"}
 
-        source_id, final_slug = add_source(
+        (final_slug,) = add_source(
             source_type="blog",
             url=url,
             title=title,
@@ -184,7 +181,6 @@ def ingest_blog(url: str, slug: Optional[str] = None) -> dict:
 
         return {
             "status": "success",
-            "source_id": source_id,
             "slug": final_slug,
             "title": title,
             "content_length": len(text)
@@ -214,7 +210,7 @@ def ingest_text_file(filepath: str, slug: Optional[str] = None) -> dict:
         content = path.read_text()
         title = path.stem
 
-        source_id, final_slug = add_source(
+        (final_slug,) = add_source(
             source_type="text",
             filepath=str(path.absolute()),
             title=title,
@@ -225,7 +221,6 @@ def ingest_text_file(filepath: str, slug: Optional[str] = None) -> dict:
 
         return {
             "status": "success",
-            "source_id": source_id,
             "slug": final_slug,
             "title": title,
             "content_length": len(content)
@@ -267,7 +262,7 @@ def ingest_pdf(filepath: str, slug: Optional[str] = None) -> dict:
         content = result.stdout
         title = path.stem
 
-        source_id, final_slug = add_source(
+        (final_slug,) = add_source(
             source_type="pdf",
             filepath=str(path.absolute()),
             title=title,
@@ -278,7 +273,6 @@ def ingest_pdf(filepath: str, slug: Optional[str] = None) -> dict:
 
         return {
             "status": "success",
-            "source_id": source_id,
             "slug": final_slug,
             "title": title,
             "content_length": len(content)
@@ -318,7 +312,7 @@ def ingest_audio(filepath: str, slug: Optional[str] = None, model: str = "base")
         title = path.stem
         final_slug = slug or path.stem.lower().replace(" ", "-").replace("_", "-")
 
-        source_id, final_slug = add_source(
+        (final_slug,) = add_source(
             source_type="audio",
             filepath=str(path.absolute()),
             title=title,
@@ -334,7 +328,6 @@ def ingest_audio(filepath: str, slug: Optional[str] = None, model: str = "base")
 
         return {
             "status": "success",
-            "source_id": source_id,
             "slug": final_slug,
             "title": title,
             "transcript_length": len(transcript),
