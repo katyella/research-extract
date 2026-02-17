@@ -11,9 +11,13 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent))
 from db import get_source, get_source_by_slug, add_extraction, DATA_DIR
 
-PROGRESS_FILE = DATA_DIR / "extraction_progress.json"
 CHUNKS_DIR = DATA_DIR / "chunks"
 EXPORTS_DIR = DATA_DIR / "exports"
+
+
+def _progress_file(slug: str) -> Path:
+    """Return the progress file path for a given slug."""
+    return DATA_DIR / f"extraction_progress_{slug}.json"
 
 
 def chunk_transcript(slug: str = None, source_id: int = None, chunk_size: int = 15000) -> list[dict]:
@@ -108,18 +112,20 @@ def init_progress(slug: str, source_id: int, total_chunks: int) -> dict:
         "chunks": {str(i): "pending" for i in range(total_chunks)},
         "results": {}
     }
-    PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(PROGRESS_FILE, 'w') as f:
+    pf = _progress_file(slug)
+    pf.parent.mkdir(parents=True, exist_ok=True)
+    with open(pf, 'w') as f:
         json.dump(progress, f, indent=2)
     return progress
 
 
-def update_progress(chunk_id: int, status: str, result: dict = None):
+def update_progress(chunk_id: int, status: str, result: dict = None, slug: str = None):
     """Update progress for a specific chunk."""
-    if not PROGRESS_FILE.exists():
+    pf = _progress_file(slug) if slug else None
+    if not pf or not pf.exists():
         return
 
-    with open(PROGRESS_FILE, 'r') as f:
+    with open(pf, 'r') as f:
         progress = json.load(f)
 
     progress['chunks'][str(chunk_id)] = status
@@ -132,16 +138,17 @@ def update_progress(chunk_id: int, status: str, result: dict = None):
         progress['status'] = "completed"
         progress['completed_at'] = datetime.now().isoformat()
 
-    with open(PROGRESS_FILE, 'w') as f:
+    with open(pf, 'w') as f:
         json.dump(progress, f, indent=2)
 
 
-def get_progress() -> dict:
-    """Get current extraction progress."""
-    if not PROGRESS_FILE.exists():
+def get_progress(slug: str = None) -> dict:
+    """Get current extraction progress for a slug."""
+    pf = _progress_file(slug) if slug else None
+    if not pf or not pf.exists():
         return {"status": "no_extraction"}
 
-    with open(PROGRESS_FILE, 'r') as f:
+    with open(pf, 'r') as f:
         progress = json.load(f)
 
     if progress['total_chunks'] > 0:
@@ -152,9 +159,9 @@ def get_progress() -> dict:
     return progress
 
 
-def print_progress_bar():
+def print_progress_bar(slug: str = None):
     """Print a simple progress bar to stdout."""
-    progress = get_progress()
+    progress = get_progress(slug=slug)
     if progress['status'] == "no_extraction":
         print("No extraction in progress")
         return
@@ -173,9 +180,9 @@ def print_progress_bar():
         print(" Done!")
 
 
-def merge_chunk_results(source_id: int) -> dict:
+def merge_chunk_results(source_id: int, slug: str = None) -> dict:
     """Merge results from all chunks into a single extraction."""
-    progress = get_progress()
+    progress = get_progress(slug=slug)
     if progress['status'] != "completed":
         return {"error": "Extraction not complete"}
 
@@ -294,26 +301,32 @@ if __name__ == "__main__":
         print(f"\nChunks saved to {CHUNKS_DIR}")
 
     elif args.command == "progress":
+        if not args.slug:
+            print("--slug required for progress tracking")
+            sys.exit(1)
         if args.watch:
             import time
             while True:
-                print_progress_bar()
-                progress = get_progress()
+                print_progress_bar(slug=args.slug)
+                progress = get_progress(slug=args.slug)
                 if progress.get('status') == "completed":
                     break
                 time.sleep(1)
         else:
-            progress = get_progress()
+            progress = get_progress(slug=args.slug)
             print(json.dumps(progress, indent=2))
 
     elif args.command == "merge":
-        progress = get_progress()
+        if not args.slug:
+            print("--slug required for merge")
+            sys.exit(1)
+        progress = get_progress(slug=args.slug)
         source_id = progress.get('source_id')
         slug = progress.get('slug')
         if not source_id:
-            print("No extraction in progress")
+            print("No extraction in progress for this slug")
             sys.exit(1)
-        merged = merge_chunk_results(source_id)
+        merged = merge_chunk_results(source_id, slug=slug)
         EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
         output_path = EXPORTS_DIR / f"{slug}_merged.json"
         with open(output_path, 'w') as f:

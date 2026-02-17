@@ -10,7 +10,7 @@ Feed it any content source and it will:
 2. **Chunk** long transcripts into processable pieces
 3. **Extract** insights in parallel using agent teams (3 agents processing chunks simultaneously)
 4. **Merge and rank** all findings into a consolidated analysis
-5. **Generate slides** (optional) as a landscape PDF presentation
+5. **Generate variants** — Show Notes and Cheat Sheet HTML pages
 
 ### What gets extracted
 
@@ -25,11 +25,11 @@ Feed it any content source and it will:
 
 ## Install
 
-```bash
-npx skills add katyella/research-extract
-```
+Copy this directory into `.claude/skills/research-extract/` in your project:
 
-This installs into `.claude/skills/research-extract/` in your project.
+```bash
+cp -r research-extract/ your-project/.claude/skills/research-extract/
+```
 
 ### First-time setup
 
@@ -37,7 +37,7 @@ This installs into `.claude/skills/research-extract/` in your project.
 bash .claude/skills/research-extract/scripts/setup.sh
 ```
 
-Installs Python dependencies (WeasyPrint, Jinja2) and checks for system tools.
+Checks for required system tools (yt-dlp, pdftotext, whisper).
 
 **Required:** `yt-dlp` (for YouTube). Install with `brew install yt-dlp` or `pip install yt-dlp`.
 
@@ -50,7 +50,7 @@ In Claude Code, use the `/research-extract` command:
 ```
 /research-extract ingest https://youtube.com/watch?v=abc123 as my-talk
 /research-extract analyze my-talk
-/research-extract slides my-talk
+/research-extract variants my-talk
 /research-extract list sources
 ```
 
@@ -75,9 +75,11 @@ Key Insights (ranked):
 2. Talk to users before writing code
 ...
 
-> /research-extract slides startup-advice
+> /research-extract variants startup-advice
 
-Generated: .research-extract/slides/startup-advice-slides.pdf
+Generated:
+  .research-extract/variants/startup-advice/show-notes.html
+  .research-extract/variants/startup-advice/cheat-sheet.html
 ```
 
 ## Supported sources
@@ -96,12 +98,13 @@ All data lives in `.research-extract/` at your project root (gitignored by defau
 
 ```
 .research-extract/
-├── research.db              # SQLite database
-├── sources/                 # Raw transcripts
-├── chunks/                  # Chunked transcript files
-├── exports/                 # Extraction results (merged, consolidated)
-├── extraction_progress.json # Progress tracking
-└── slides/                  # Generated PDF slideshows
+├── research.db                        # SQLite database
+├── sources/                           # Raw transcripts
+├── chunks/                            # Chunked transcript files
+├── exports/                           # Extraction results (merged, consolidated)
+├── extraction_progress_[slug].json    # Per-slug progress tracking
+├── writeups/                          # Generated markdown writeups
+└── variants/                          # Generated HTML variant pages
 ```
 
 ## How it works

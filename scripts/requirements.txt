@@ -1,3 +1,2 @@
-Jinja2
-PyYAML
-markdown
+# No Python package dependencies — only stdlib is used.
+# System tools (yt-dlp, pdftotext, whisper) are checked by setup.sh.

@@ -74,6 +74,15 @@ def slugify(text: str) -> str:
     return text[:50]
 
 
+def validate_slug(slug: str) -> str:
+    """Validate and sanitize a slug. Raises ValueError for unsafe slugs."""
+    if not slug:
+        raise ValueError("Slug cannot be empty")
+    if '..' in slug or '/' in slug or '\\' in slug:
+        raise ValueError(f"Slug contains unsafe characters: {slug!r}")
+    return slugify(slug)
+
+
 def add_source(
     source_type: str,
     transcript: str,
@@ -90,137 +99,154 @@ def add_source(
         slug = f"source-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
     conn = get_connection()
-    cursor = conn.execute(
-        """
-        INSERT INTO sources (slug, url, filepath, source_type, title, transcript, metadata)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
-        (slug, url, filepath, source_type, title, transcript, json.dumps(metadata or {}))
-    )
-    conn.commit()
-    source_id = cursor.lastrowid
-    conn.close()
-    return source_id, slug
+    try:
+        cursor = conn.execute(
+            """
+            INSERT INTO sources (slug, url, filepath, source_type, title, transcript, metadata)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (slug, url, filepath, source_type, title, transcript, json.dumps(metadata or {}))
+        )
+        conn.commit()
+        source_id = cursor.lastrowid
+        return source_id, slug
+    finally:
+        conn.close()
 
 
 def get_source(source_id: int) -> Optional[dict]:
     """Get a source by ID."""
     conn = get_connection()
-    row = conn.execute("SELECT * FROM sources WHERE id = ?", (source_id,)).fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return None
+    try:
+        row = conn.execute("SELECT * FROM sources WHERE id = ?", (source_id,)).fetchone()
+        if row:
+            return dict(row)
+        return None
+    finally:
+        conn.close()
 
 
 def get_source_by_url(url: str) -> Optional[dict]:
     """Get a source by URL (to avoid re-ingesting)."""
     conn = get_connection()
-    row = conn.execute("SELECT * FROM sources WHERE url = ?", (url,)).fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return None
+    try:
+        row = conn.execute("SELECT * FROM sources WHERE url = ?", (url,)).fetchone()
+        if row:
+            return dict(row)
+        return None
+    finally:
+        conn.close()
 
 
 def get_source_by_slug(slug: str) -> Optional[dict]:
     """Get a source by slug."""
     conn = get_connection()
-    row = conn.execute("SELECT * FROM sources WHERE slug = ?", (slug,)).fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return None
+    try:
+        row = conn.execute("SELECT * FROM sources WHERE slug = ?", (slug,)).fetchone()
+        if row:
+            return dict(row)
+        return None
+    finally:
+        conn.close()
 
 
 def list_sources(source_type: Optional[str] = None, limit: int = 50) -> list[dict]:
     """List sources, optionally filtered by type."""
     conn = get_connection()
-    if source_type:
-        rows = conn.execute(
-            "SELECT id, slug, url, filepath, source_type, title, created_at FROM sources WHERE source_type = ? ORDER BY created_at DESC LIMIT ?",
-            (source_type, limit)
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT id, slug, url, filepath, source_type, title, created_at FROM sources ORDER BY created_at DESC LIMIT ?",
-            (limit,)
-        ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        if source_type:
+            rows = conn.execute(
+                "SELECT id, slug, url, filepath, source_type, title, created_at FROM sources WHERE source_type = ? ORDER BY created_at DESC LIMIT ?",
+                (source_type, limit)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT id, slug, url, filepath, source_type, title, created_at FROM sources ORDER BY created_at DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
 
 
 def add_extraction(source_id: int, lens: str, content: dict) -> int:
     """Add an extraction for a source. Returns the extraction ID."""
     conn = get_connection()
-    cursor = conn.execute(
-        """
-        INSERT INTO extractions (source_id, lens, content)
-        VALUES (?, ?, ?)
-        """,
-        (source_id, lens, json.dumps(content))
-    )
-    conn.commit()
-    extraction_id = cursor.lastrowid
-    conn.close()
-    return extraction_id
+    try:
+        cursor = conn.execute(
+            """
+            INSERT INTO extractions (source_id, lens, content)
+            VALUES (?, ?, ?)
+            """,
+            (source_id, lens, json.dumps(content))
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
 
 
 def get_extractions(source_id: int) -> list[dict]:
     """Get all extractions for a source."""
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT * FROM extractions WHERE source_id = ? ORDER BY created_at DESC",
-        (source_id,)
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        rows = conn.execute(
+            "SELECT * FROM extractions WHERE source_id = ? ORDER BY created_at DESC",
+            (source_id,)
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
 
 
 def search_extractions(query: str, lens: Optional[str] = None) -> list[dict]:
     """Search extractions by content (simple LIKE search)."""
     conn = get_connection()
-    if lens:
-        rows = conn.execute(
-            """
-            SELECT e.*, s.title, s.url, s.source_type
-            FROM extractions e
-            JOIN sources s ON e.source_id = s.id
-            WHERE e.content LIKE ? AND e.lens = ?
-            ORDER BY e.created_at DESC
-            """,
-            (f"%{query}%", lens)
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            """
-            SELECT e.*, s.title, s.url, s.source_type
-            FROM extractions e
-            JOIN sources s ON e.source_id = s.id
-            WHERE e.content LIKE ?
-            ORDER BY e.created_at DESC
-            """,
-            (f"%{query}%",)
-        ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        if lens:
+            rows = conn.execute(
+                """
+                SELECT e.*, s.title, s.url, s.source_type
+                FROM extractions e
+                JOIN sources s ON e.source_id = s.id
+                WHERE e.content LIKE ? AND e.lens = ?
+                ORDER BY e.created_at DESC
+                """,
+                (f"%{query}%", lens)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """
+                SELECT e.*, s.title, s.url, s.source_type
+                FROM extractions e
+                JOIN sources s ON e.source_id = s.id
+                WHERE e.content LIKE ?
+                ORDER BY e.created_at DESC
+                """,
+                (f"%{query}%",)
+            ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
 
 
 def get_all_by_lens(lens: str) -> list[dict]:
     """Get all extractions for a specific lens."""
     conn = get_connection()
-    rows = conn.execute(
-        """
-        SELECT e.*, s.title, s.url, s.source_type
-        FROM extractions e
-        JOIN sources s ON e.source_id = s.id
-        WHERE e.lens = ?
-        ORDER BY e.created_at DESC
-        """,
-        (lens,)
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        rows = conn.execute(
+            """
+            SELECT e.*, s.title, s.url, s.source_type
+            FROM extractions e
+            JOIN sources s ON e.source_id = s.id
+            WHERE e.lens = ?
+            ORDER BY e.created_at DESC
+            """,
+            (lens,)
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

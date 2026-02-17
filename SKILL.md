@@ -20,7 +20,7 @@ Run once to install Python dependencies:
 bash .claude/skills/research-extract/scripts/setup.sh
 ```
 
-This creates a virtual environment and installs WeasyPrint, Jinja2, PyYAML, and markdown. It also checks for system dependencies (yt-dlp, pdftotext, whisper).
+This checks for required system dependencies (yt-dlp, pdftotext, whisper).
 
 ## Commands
 
@@ -354,7 +354,7 @@ All data stored in `{project_root}/.research-extract/`:
 - **Chunk results**: `exports/[slug]_chunk_N_result.json`
 - **Merged results**: `exports/[slug]_merged.json`
 - **Consolidated**: `exports/[slug]_consolidated.json`
-- **Progress**: `extraction_progress.json`
+- **Progress**: `extraction_progress_[slug].json`
 - **Notes writeup**: `writeups/[slug]-notes.md`
 - **Essay writeup**: `writeups/[slug]-writeup.md`
 - **Variant pages**: `variants/[slug]/show-notes.html`, `variants/[slug]/cheat-sheet.html`

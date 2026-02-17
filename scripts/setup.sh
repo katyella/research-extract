@@ -1,24 +1,10 @@
 #!/bin/bash
 # Setup script for research-extract skill
-# Run this once to install dependencies
+# Run this once to check system dependencies
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV_DIR="$SCRIPT_DIR/.venv"
 
-echo "Setting up research-extract skill..."
-echo ""
-
-# Create venv if it doesn't exist
-if [ ! -d "$VENV_DIR" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv "$VENV_DIR"
-fi
-
-# Activate and install dependencies
-echo "Installing Python dependencies..."
-source "$VENV_DIR/bin/activate"
-pip install -q -r "$SCRIPT_DIR/requirements.txt"
-
+echo "Checking research-extract dependencies..."
 echo ""
 
 # Check system dependencies
@@ -48,6 +34,4 @@ if [ -n "$MISSING" ]; then
     exit 1
 fi
 
-echo "Setup complete!"
-echo ""
-echo "The skill is ready to use with /research-extract"
+echo "All dependencies found. The skill is ready to use with /research-extract"

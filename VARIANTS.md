@@ -4,7 +4,7 @@ Generate two HTML variant pages from a consolidated extraction JSON. These are t
 
 ## Data Source
 
-Read the consolidated JSON from `.research/exports/[slug]_consolidated.json`. The JSON contains:
+Read the consolidated JSON from `.research-extract/exports/[slug]_consolidated.json`. The JSON contains:
 
 ```
 {
@@ -27,11 +27,11 @@ Read the consolidated JSON from `.research/exports/[slug]_consolidated.json`. Th
 }
 ```
 
-Also read the raw transcript from `.research/sources/[slug].txt` to extract timestamps for Show Notes sections. Parse `[HH:MM:SS]` prefixes from transcript lines.
+Also read the raw transcript from `.research-extract/sources/[slug].txt` to extract timestamps for Show Notes sections. Parse `[HH:MM:SS]` prefixes from transcript lines.
 
 ## Output
 
-Save to `.research/variants/[slug]/`:
+Save to `.research-extract/variants/[slug]/`:
 - `show-notes.html`
 - `cheat-sheet.html`
 

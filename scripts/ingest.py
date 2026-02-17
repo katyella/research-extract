@@ -6,6 +6,7 @@ Main entry point for ingesting content from various sources.
 import sys
 import json
 import re
+import html
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -13,8 +14,15 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from db import add_source, get_source_by_url, get_source, get_source_by_slug
+from db import add_source, get_source_by_url, get_source, get_source_by_slug, validate_slug
 from transcribe import transcribe_youtube, get_youtube_id, transcribe_audio_file
+
+
+def _sanitize_slug(slug: Optional[str]) -> Optional[str]:
+    """Sanitize a user-provided slug, returning None if not provided."""
+    if slug is None:
+        return None
+    return validate_slug(slug)
 
 
 def detect_source_type(input_str: str) -> tuple[str, str]:
@@ -49,8 +57,33 @@ def detect_source_type(input_str: str) -> tuple[str, str]:
     return 'unknown', input_str
 
 
+def _extract_article_content(raw_html: str) -> str:
+    """Extract article body from HTML, preferring semantic containers."""
+    # Try semantic containers first: <article>, <main>, large role="main"
+    for tag in ['article', 'main']:
+        pattern = rf'<{tag}[^>]*>(.*?)</{tag}>'
+        match = re.search(pattern, raw_html, re.DOTALL | re.IGNORECASE)
+        if match and len(match.group(1)) > 200:
+            raw_html = match.group(1)
+            break
+
+    # Strip scripts, styles, nav, header, footer
+    for tag in ['script', 'style', 'nav', 'header', 'footer', 'aside']:
+        raw_html = re.sub(rf'<{tag}[^>]*>.*?</{tag}>', '', raw_html, flags=re.DOTALL | re.IGNORECASE)
+
+    # Strip all remaining tags
+    text = re.sub(r'<[^>]+>', ' ', raw_html)
+    # Decode all HTML entities
+    text = html.unescape(text)
+    # Normalize whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+
 def ingest_youtube(url: str, slug: Optional[str] = None) -> dict:
     """Ingest a YouTube video."""
+    slug = _sanitize_slug(slug)
+
     existing = get_source_by_url(url)
     if existing:
         return {
@@ -99,6 +132,8 @@ def ingest_youtube(url: str, slug: Optional[str] = None) -> dict:
 
 def ingest_blog(url: str, slug: Optional[str] = None) -> dict:
     """Ingest a blog/web article."""
+    slug = _sanitize_slug(slug)
+
     existing = get_source_by_url(url)
     if existing:
         return {
@@ -128,20 +163,12 @@ def ingest_blog(url: str, slug: Optional[str] = None) -> dict:
         if result.returncode != 0:
             return {"status": "error", "message": "Failed to fetch URL"}
 
-        html = result.stdout
+        raw = result.stdout
 
-        title_match = re.search(r'<title[^>]*>([^<]+)</title>', html, re.IGNORECASE)
-        title = title_match.group(1).strip() if title_match else "Unknown"
+        title_match = re.search(r'<title[^>]*>([^<]+)</title>', raw, re.IGNORECASE)
+        title = html.unescape(title_match.group(1).strip()) if title_match else "Unknown"
 
-        text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r'<[^>]+>', ' ', text)
-        text = re.sub(r'\s+', ' ', text).strip()
-
-        text = re.sub(r'&nbsp;', ' ', text)
-        text = re.sub(r'&amp;', '&', text)
-        text = re.sub(r'&lt;', '<', text)
-        text = re.sub(r'&gt;', '>', text)
+        text = _extract_article_content(raw)
 
         if len(text) < 100:
             return {"status": "error", "message": "Could not extract meaningful content"}
@@ -169,6 +196,7 @@ def ingest_blog(url: str, slug: Optional[str] = None) -> dict:
 
 def ingest_text_file(filepath: str, slug: Optional[str] = None) -> dict:
     """Ingest a local text file."""
+    slug = _sanitize_slug(slug)
     path = Path(filepath)
 
     if not path.exists():
@@ -208,6 +236,7 @@ def ingest_text_file(filepath: str, slug: Optional[str] = None) -> dict:
 
 def ingest_pdf(filepath: str, slug: Optional[str] = None) -> dict:
     """Ingest a PDF file (requires pdftotext)."""
+    slug = _sanitize_slug(slug)
     path = Path(filepath)
 
     if not path.exists():
@@ -265,6 +294,7 @@ def ingest_pdf(filepath: str, slug: Optional[str] = None) -> dict:
 
 def ingest_audio(filepath: str, slug: Optional[str] = None, model: str = "base") -> dict:
     """Ingest an audio file (mp3, wav, m4a, etc.) using Whisper transcription."""
+    slug = _sanitize_slug(slug)
     path = Path(filepath)
 
     if not path.exists():

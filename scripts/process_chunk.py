@@ -41,7 +41,7 @@ def save_chunk_result(slug: str = None, source_id: int = None, chunk_id: int = 0
     with open(result_path, 'w') as f:
         json.dump(result, f, indent=2)
 
-    update_progress(chunk_id, "completed", result)
+    update_progress(chunk_id, "completed", result, slug=slug)
     return result_path
 
 
@@ -141,9 +141,8 @@ if __name__ == "__main__":
     slug = args.slug
     source_id = args.source_id
     if not slug and not source_id:
-        progress = get_progress()
-        slug = progress.get('slug')
-        source_id = progress.get('source_id')
+        print("ERROR: --slug or --source-id required")
+        sys.exit(1)
 
     if args.command == "show":
         print_chunk_for_analysis(slug=slug, source_id=source_id, chunk_id=args.chunk_id)
